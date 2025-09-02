@@ -1,10 +1,14 @@
-# src/query.py
-from langchain.vectorstores import Chroma
-from langchain_ollama import OllamaEmbeddings, OllamaLLM
+
 from langchain_core.documents import Document
 import os
 import re
 from typing import List, Tuple
+
+from langchain.vectorstores import Chroma
+from langchain_ollama import OllamaEmbeddings, OllamaLLM
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
 
 
 # Resolve absolute path to the project root and chroma directory
