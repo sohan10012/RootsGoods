@@ -1,10 +1,11 @@
 # src/query.py
-from langchain_chroma import Chroma
+from langchain.vectorstores import Chroma
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain_core.documents import Document
 import os
 import re
 from typing import List, Tuple
+
 
 # Resolve absolute path to the project root and chroma directory
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))

@@ -1,8 +1,9 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_chroma import Chroma
+from langchain.vectorstores import Chroma
 from langchain_ollama import OllamaEmbeddings
 import os
+
 
 # Resolve absolute paths
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
