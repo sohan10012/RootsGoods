@@ -1,10 +1,9 @@
+
 streamlit==1.26.0
 langchain==0.1.224
-langchain-llama==0.0.2
-langchain-ollama==0.0.1
-langchain-chroma==0.0.38
-langchain-community==0.0.67
 chromadb==0.3.27
+langchain-ollama==0.0.1
+langchain-community==0.0.67
 PyPDF2==3.1.0
 pydantic==2.6.2
 python-dotenv==1.0.1
