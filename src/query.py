@@ -1,5 +1,5 @@
 
-from langchain_core.documents import Document
+from langchain.schema import Document
 import os
 import re
 from typing import List, Tuple
