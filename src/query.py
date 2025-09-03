@@ -1,32 +1,23 @@
-
-from langchain.schema import Document
 import os
 import re
 from typing import List, Tuple
-
+from langchain.schema import Document
 from langchain.vectorstores import Chroma
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-
-
-# Resolve absolute path to the project root and chroma directory
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 CHROMA_DIR = os.path.join(PROJECT_ROOT, "chroma_db")
 
-# Environment-configurable models
 EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 RETRIEVER_MODEL = os.getenv("OLLAMA_RETRIEVER_MODEL", "llama3")
 REASONER_MODEL = os.getenv("OLLAMA_REASONER_MODEL", "llama3")
 FINALIZER_MODEL = os.getenv("OLLAMA_FINAL_MODEL", "llama3")
 
-# Retrieval parameters
 TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 FAST_MODE = os.getenv("RAG_FAST", "0") in {"1", "true", "True", "yes", "on"}
-
-# Ollama generation params (optional)
 NUM_CTX = int(os.getenv("OLLAMA_NUM_CTX", "0")) or None
 NUM_PREDICT = int(os.getenv("OLLAMA_NUM_PREDICT", "0")) or None
 
@@ -36,15 +27,12 @@ if NUM_CTX is not None:
 if NUM_PREDICT is not None:
     ollama_common_kwargs["num_predict"] = NUM_PREDICT
 
-# 1) Build vector store with embeddings
 embedding = OllamaEmbeddings(model=EMBED_MODEL)
 vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embedding)
 
-# 2) Instantiate agent models (deterministic)
 retrieval_agent = OllamaLLM(model=RETRIEVER_MODEL, **ollama_common_kwargs)
 reasoning_agent = OllamaLLM(model=REASONER_MODEL, **ollama_common_kwargs)
 final_agent = OllamaLLM(model=FINALIZER_MODEL, **ollama_common_kwargs)
-
 
 def _clean_answer(text: str) -> str:
     """Remove boilerplate like 'Here's an improved draft:' and 'Note:' prefaces."""
@@ -56,7 +44,6 @@ def _clean_answer(text: str) -> str:
     for pat in patterns:
         cleaned = re.sub(pat, "", cleaned, flags=re.IGNORECASE | re.MULTILINE)
     return cleaned.strip()
-
 
 def rewrite_query(user_query: str) -> str:
     """Use the retrieval agent to optimize the query for vector search."""
@@ -74,11 +61,9 @@ def rewrite_query(user_query: str) -> str:
         return rewritten["text"].strip()
     return str(rewritten).strip()
 
-
 def retrieve_documents(search_query: str, k: int = TOP_K) -> List[Document]:
     """Retrieve top-k relevant documents from Chroma."""
     return vectordb.similarity_search(search_query, k=k)
-
 
 def reason_over_context(user_query: str, docs: List[Document]) -> str:
     """Use the reasoning agent to synthesize a grounded draft based on retrieved docs."""
@@ -103,7 +88,6 @@ def reason_over_context(user_query: str, docs: List[Document]) -> str:
         return _clean_answer(draft["text"])
     return _clean_answer(str(draft))
 
-
 def finalize_answer(user_query: str, draft: str) -> str:
     """Use the final agent to polish the draft into a concise, helpful answer."""
     if FAST_MODE:
@@ -122,7 +106,6 @@ def finalize_answer(user_query: str, draft: str) -> str:
         return _clean_answer(final["text"])
     return _clean_answer(str(final))
 
-
 def unique_sources(docs: List[Document]) -> List[str]:
     """Collect unique source identifiers from documents in a stable order."""
     seen = set()
@@ -134,20 +117,11 @@ def unique_sources(docs: List[Document]) -> List[str]:
             ordered.append(src)
     return ordered
 
-
 def ask(query: str) -> Tuple[str, List[str]]:
-    # Agent 1: rewrite/expand the query for better recall
     rewritten_query = rewrite_query(query)
-
-    # Retrieve context
     docs = retrieve_documents(rewritten_query, k=TOP_K)
-
-    # Agent 2: reason over retrieved documents
     draft = reason_over_context(query, docs)
-
-    # Agent 3: finalize for user-facing output
     final_answer = finalize_answer(query, draft)
-
     sources = unique_sources(docs)
     return final_answer, sources
 
